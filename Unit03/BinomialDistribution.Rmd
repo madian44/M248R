@@ -1,0 +1,156 @@
+---
+title: 'M248: Binomial Distribution'
+author: "David Thomas"
+date: "05/11/2020"
+output: html_document
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+\(~\)
+
+In the unlikely event that someone reads this, please feel free to point out errors or suggest improvements. I'm so new to coding that I have probably overlooked major statistical flaws in my preoccupation with persuading my code to produce some output ... any kind of output at all!
+
+The binomial distribution is a discrete probability distribution, which describes the outcome of a sequence of \(n\) independent Bernoulli trials in an experiment. Each trial has only two outcomes, designated either success (1) or failure (0), or vice versa. If the probability of a successful trial is \(p\), then the probability of having \(x\) successful outcomes in an experiment of \(n\) independent trials is given by:
+
+\[f(x) = \dbinom{n}{x} p^x (1-p)^{(n-x)} \text{ where } x=1,2,\ldots,n\]
+
+### Example 9; page 157: Book A
+
+In an MCQ exam of 20 questions, with each question having five options, what is the probability that a student who guesses answers at random will pass the examination if the pass mark is 10. A prerequisite of Bernoulli trials is that an answer to any particular question is independent of an answer to any other question, which is the case here.
+
+The probability of picking the correct option is 1/5 (0.2) for each question.
+
+### Solution
+
+The probability mass function \(p(t) = P(T = t)\) for any particular score (e.g. zero) is given by 'dbinom':
+
+```{r}
+# dbinom(x=0, size=20, prob=0.2) where x is number of successes, size is number of trials,
+# and prob is the probability of success in each trial.
+(score <- dbinom(x=0, size=20, prob=0.2))
+```
+
+The total number of correct answers given to the 20 questions is a random variable having a binomial
+distribution with parameters \(n = 20\) and \(p = 0.2\), \(T \sim B(20, 0.2)\). If the pass mark is 10, then the probability of scoring \(<10\) (i.e. fail) is given by:
+
+\[P(T ≤9) = P(T = 0) + P(T = 1) + P(T = 2) + \ldots + P(T = 9)\]
+
+To find the cumulative probability of having nine or fewer correct answers by random guesses (the cumulative distribution function of \(T\), \(\; F(T)\)), which for any discrete distribution is calculated by addition, we can sequentially apply the function 'dbinom' with $x=0,1,\ldots,9$:
+
+```{r}
+(score <-  dbinom(x=0, size=20, prob=0.2) + 
+          dbinom(x=1, size=20, prob=0.2) + 
+          dbinom(x=2, size=20, prob=0.2) + 
+          dbinom(x=3, size=20, prob=0.2) + 
+          dbinom(x=4, size=20, prob=0.2) + 
+          dbinom(x=5, size=20, prob=0.2) + 
+          dbinom(x=6, size=20, prob=0.2) + 
+          dbinom(x=7, size=20, prob=0.2) + 
+          dbinom(x=8, size=20, prob=0.2) + 
+          dbinom(x=9, size=20, prob=0.2))
+```
+
+Alternatively, we can use the cumulative distribution function for binomial distribution, \(F(9)\).
+
+\[P(T < 10) = P(T ≤ 9) = F(9)\]
+
+which in R is given by the function pbinom:
+
+```{r}
+(score <- pbinom(9, size=20, prob=0.2))
+```
+
+So, random guesses will lead to failure in 99.7\% of exams, and the probability of passing is therefore:
+
+\[P(T ≥ 10) = 1−P(T ≤ 9) = 1−F(9) = 1−0.9974 = 0.0026\]
+
+\(~\)
+
+### Plotting the PMF
+
+```{r}
+require(ggplot2)
+
+df.p <- data.frame(
+  x=1:20, 
+  prob=dbinom(1:20, 20, prob=0.2)
+  )
+
+plt.pdf <-  
+  ggplot(
+    data = df.p, 
+    aes(x = x, y = prob)) + 
+  geom_line() + 
+  # geom_ribbon(
+  #   data = subset(df, x >= 10 & x <= 20), 
+  #   aes(ymax = prob), 
+  #   ymin=0, 
+  #   fill = "red", 
+  #   colour = NA, 
+  #   alpha = 0.5
+  #   ) + 
+  theme_bw() + 
+    labs(
+         title="Binomial distribution:",              # subtitle="whatever", caption = "whatever", 
+         subtitle="Probability mass function",       #, caption = "whatever",
+         y="Probability",
+         x="Score" 
+         ) +
+    scale_x_continuous(expand = c(0, 0)) +         # expand = c(0, 0) removes default
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 0.23)) +          # gap between axis and (0, 0)  # 
+  theme(
+      panel.grid = element_line(colour = "white")
+    )
+
+plt.pdf
+```
+
+\(~\)
+
+### Plotting the CDF
+
+```{r}
+df.c <- data.frame(
+  x=1:20, 
+  prob=pbinom(1:20, 20, prob=0.2)
+  )
+
+
+#x = x, y = prob
+#ggplot(df, aes(height)) + stat_ecdf(geom = "point")
+#ggplot(df, aes(height)) + stat_ecdf(geom = "step")
+
+plt.cdf <-  
+  ggplot(
+    data = df.c, 
+    aes(x = x, y = prob)) + 
+  geom_line() + 
+  geom_ribbon(
+    data = subset(df.c, x >= 10 & x <= 20),
+    aes(ymax = prob),
+    ymin=0,
+    fill = "darkolivegreen4",
+    alpha = 0.25
+    ) +
+  theme_bw() + 
+    labs(
+         title="Binomial distribution:", 
+         subtitle="Cumulative distribution function",       #, caption = "whatever",
+         y="Cumulative probability",
+         x="Score" 
+         ) +
+    scale_x_continuous(expand = c(0, 0)) +         # expand = c(0, 0) removes default
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 1.10)) +          # gap between axis and (0, 0)  # 
+  theme(
+      panel.grid = element_line(colour = "white")
+    )
+
+plt.cdf
+```
+
+
+
